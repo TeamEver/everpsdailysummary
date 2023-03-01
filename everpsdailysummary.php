@@ -545,7 +545,8 @@ class Everpsdailysummary extends Module
             );
             if (!Validate::isLoadedObject($employee)) {
                 continue;
-            }        $sent = Mail::send(
+            }
+            $sent = Mail::send(
                 (int)Context::getContext()->language->id,
                 'everpsdailysummary',
                 (string)$subject,
