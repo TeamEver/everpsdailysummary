@@ -143,21 +143,28 @@ class Everpsdailysummary extends Module
         $orderStates = OrderState::getOrderStates(
             (int)Context::getContext()->language->id
         );
+        $employees = $this->getEmployees();
         return array(
             'form' => array(
                 'legend' => array(
                 'title' => $this->l('Settings'),
-                'icon' => 'icon-cogs',
+                'icon' => 'icon-smile',
                 ),
                 'input' => array(
                     array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'prefix' => '<i class="icon icon-envelope"></i>',
-                        'desc' => $this->l('Enter a valid email address'),
-                        'hint' => $this->l('Will receive all daily orders'),
-                        'name' => 'EVERPSDAILYSUMMARY_ACCOUNT_EMAIL',
-                        'label' => $this->l('Email'),
+                        'type' => 'select',
+                        'label' => $this->l('Allowed customer groups'),
+                        'desc' => $this->l('Choose allowed groups, customers must be logged'),
+                        'hint' => $this->l('Customers must be logged and have a registered address'),
+                        'name' => 'EVERPSDAILYSUMMARY_MAILS[]',
+                        'class' => 'chosen',
+                        'identifier' => 'email',
+                        'multiple' => true,
+                        'options' => array(
+                            'query' => $employees,
+                            'id' => 'id_employee',
+                            'name' => 'email',
+                        ),
                     ),
                     array(
                         'type' => 'switch',
@@ -218,11 +225,18 @@ class Everpsdailysummary extends Module
      */
     protected function getConfigFormValues()
     {
+        $employeeEmails = Configuration::get(
+            'EVERPSDAILYSUMMARY_MAILS'
+        );
+        if (!$employeeEmails) {
+            Configuration::updateValue(
+                'EVERPSDAILYSUMMARY_MAILS',
+                json_encode(
+                    [Configuration::get('PS_SHOP_EMAIL')]
+                )
+            );
+        }
         return array(
-            'EVERPSDAILYSUMMARY_ACCOUNT_EMAIL' => Configuration::get(
-                'EVERPSDAILYSUMMARY_ACCOUNT_EMAIL',
-                'noreply@team-ever.com'
-            ),
             'EVERPSDAILYSUMMARY_VALIDATED_STATE_ID' => Configuration::get(
                 'EVERPSDAILYSUMMARY_VALIDATED_STATE_ID'
             ),
@@ -231,6 +245,14 @@ class Everpsdailysummary extends Module
             ),
             'EVERPSDAILYSUMMARY_TIME' => Configuration::get(
                 'EVERPSDAILYSUMMARY_TIME'
+            ),
+            'EVERPSDAILYSUMMARY_MAILS[]' => Tools::getValue(
+                'EVERPSDAILYSUMMARY_MAILS',
+                json_decode(
+                    Configuration::get(
+                        'EVERPSDAILYSUMMARY_MAILS'
+                    )
+                )
             ),
         );
     }
@@ -242,11 +264,11 @@ class Everpsdailysummary extends Module
         ) {
             $this->postErrors[] = $this->l('Error : [Validate order state] is not valid');
         }
-        if (!Tools::getValue('EVERPSDAILYSUMMARY_ACCOUNT_EMAIL')
-            || !Validate::isEmail(Tools::getValue('EVERPSDAILYSUMMARY_ACCOUNT_EMAIL'))
-        ) {
-            $this->postErrors[] = $this->l('Error : [Email] is not valid');
-        }
+            if (!Tools::getIsset('EVERPSDAILYSUMMARY_MAILS')
+                || !Validate::isArrayWithIds(Tools::getValue('EVERPSDAILYSUMMARY_MAILS'))
+            ) {
+                $this->postErrors[] = $this->l('Error: emails is not valid');
+            }
         if (Tools::getValue('EVERPSDAILYSUMMARY_VALIDATED_ONLY')
             && !Validate::isBool(Tools::getValue('EVERPSDAILYSUMMARY_VALIDATED_ONLY'))
         ) {
@@ -267,7 +289,15 @@ class Everpsdailysummary extends Module
         $form_values = $this->getConfigFormValues();
 
         foreach (array_keys($form_values) as $key) {
-            Configuration::updateValue($key, Tools::getValue($key));
+            if ($key == 'EVERPSDAILYSUMMARY_MAILS[]') {
+                Configuration::updateValue(
+                    'EVERPSDAILYSUMMARY_MAILS',
+                    json_encode(Tools::getValue('EVERPSDAILYSUMMARY_MAILS')),
+                    true
+                );
+            } else {
+                Configuration::updateValue($key, Tools::getValue($key));
+            }
         }
     }
 
@@ -503,36 +533,44 @@ class Everpsdailysummary extends Module
             $items .= $table;
         }
         // Then send email
-        $email = (string)Configuration::get(
-            'EVERPSDAILYSUMMARY_ACCOUNT_EMAIL'
-        );
         $subject = $this->l('Daily orders');
         $mailDir = _PS_MODULE_DIR_.'everpsdailysummary/mails/';
-        $sent = Mail::send(
-            (int)Context::getContext()->language->id,
-            'everpsdailysummary',
-            (string)$subject,
-            array(
-                '{shop_name}' => Configuration::get('PS_SHOP_NAME'),
-                '{shop_logo}' => _PS_IMG_DIR_.Configuration::get(
-                    'PS_LOGO',
-                    null,
-                    null,
-                    (int)$id_shop
-                ),
-                '{message}' => $items,
-            ),
-            (string)$email,
-            (string)Configuration::get('PS_SHOP_NAME'),
-            (string)Configuration::get('PS_SHOP_EMAIL'),
-            Configuration::get('PS_SHOP_NAME'),
-            null,
-            null,
-            $mailDir
+
+        $employeeEmails = Configuration::get(
+            'EVERPSDAILYSUMMARY_MAILS'
         );
-        if ($sent) {
-            Configuration::updateValue('EVERPSDAILYSUMMARY_SENT', date('d'));
-        }
+        foreach ($employeeEmails as $employeeEmail) {
+            $employee = new Employee(
+                (int)$employeeEmail['id_employee']
+            );
+            if (!Validate::isLoadedObject($employee)) {
+                continue;
+            }        $sent = Mail::send(
+                (int)Context::getContext()->language->id,
+                'everpsdailysummary',
+                (string)$subject,
+                array(
+                    '{shop_name}' => Configuration::get('PS_SHOP_NAME'),
+                    '{shop_logo}' => _PS_IMG_DIR_.Configuration::get(
+                        'PS_LOGO',
+                        null,
+                        null,
+                        (int)$id_shop
+                    ),
+                    '{message}' => $items,
+                ),
+                (string)$employee->email,
+                (string)Configuration::get('PS_SHOP_NAME'),
+                (string)Configuration::get('PS_SHOP_EMAIL'),
+                Configuration::get('PS_SHOP_NAME'),
+                null,
+                null,
+                $mailDir
+            );
+            if ($sent) {
+                Configuration::updateValue('EVERPSDAILYSUMMARY_SENT', date('d'));
+            }
+        }    
         return $sent;
     }
 
@@ -638,6 +676,23 @@ class Everpsdailysummary extends Module
 
         );
         return $time;
+    }
+
+    /**
+     * Return list of employees.
+     *
+     * @param bool $activeOnly Filter employee by active status
+     *
+     * @return array|false Employees or false
+     */
+    protected function getEmployees($activeOnly = true)
+    {
+        return Db::getInstance()->executeS('
+            SELECT *
+            FROM `' . _DB_PREFIX_ . 'employee`
+            ' . ($activeOnly ? ' WHERE `active` = 1' : '') . '
+            ORDER BY `lastname` ASC
+        ');
     }
 
     public function checkLatestEverModuleVersion($module, $version)
