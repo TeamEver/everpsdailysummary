@@ -16,7 +16,6 @@
  *  @copyright 2019-2021 Team Ever
  *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -24,14 +23,14 @@ if (!defined('_PS_VERSION_')) {
 class Everpsdailysummary extends Module
 {
     private $html;
-    private $postErrors = array();
-    private $postSuccess = array();
+    private $postErrors = [];
+    private $postSuccess = [];
 
     public function __construct()
     {
         $this->name = 'everpsdailysummary';
         $this->tab = 'administration';
-        $this->version = '2.1.2';
+        $this->version = '3.0.2';
         $this->author = 'Team Ever';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -53,9 +52,15 @@ class Everpsdailysummary extends Module
      */
     public function install()
     {
+        Configuration::updateValue(
+            'EVERPSDAILYSUMMARY_MAILS',
+            json_encode(
+                [1]
+            )
+        );
         return parent::install() &&
             $this->registerHook('actionFrontControllerAfterInit') &&
-            $this->registerHook('backOfficeHeader');
+            $this->registerHook('displayBackOfficeHeader');
     }
 
     public function uninstall()
@@ -153,9 +158,9 @@ class Everpsdailysummary extends Module
                 'input' => array(
                     array(
                         'type' => 'select',
-                        'label' => $this->l('Allowed customer groups'),
-                        'desc' => $this->l('Choose allowed groups, customers must be logged'),
-                        'hint' => $this->l('Customers must be logged and have a registered address'),
+                        'label' => $this->l('Allowed emails'),
+                        'desc' => $this->l('Choose allowed emails'),
+                        'hint' => $this->l('Those emails are your shop employees emails'),
                         'name' => 'EVERPSDAILYSUMMARY_MAILS[]',
                         'class' => 'chosen',
                         'identifier' => 'email',
@@ -232,7 +237,7 @@ class Everpsdailysummary extends Module
             Configuration::updateValue(
                 'EVERPSDAILYSUMMARY_MAILS',
                 json_encode(
-                    [Configuration::get('PS_SHOP_EMAIL')]
+                    [1]
                 )
             );
         }
@@ -304,7 +309,7 @@ class Everpsdailysummary extends Module
     /**
     * Add the CSS & JavaScript files you want to be loaded in the BO.
     */
-    public function hookBackOfficeHeader()
+    public function hookDisplayBackOfficeHeader()
     {
         if (Tools::getValue('module_name') == $this->name) {
             $this->context->controller->addCSS($this->_path.'views/css/back.css');
@@ -351,7 +356,7 @@ class Everpsdailysummary extends Module
         }
         $orders = Db::getInstance()->executeS($query);
         // Create array of obj containing all required orders infos
-        $daily_orders = array();
+        $daily_orders = [];
         foreach ($orders as $value) {
             $daily = new stdClass;
             $order = new Order(

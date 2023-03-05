@@ -5,9 +5,9 @@ $_MODULE = array();
 $_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_d00e3d335ab6f82cec630691556c7f50'] = 'Ever envoi des commandes journalières';
 $_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_2aa935f5915985f66289ee3229ff1a0e'] = 'Envoie une liste des commandes de la journée par email à un administrateur de la boutique';
 $_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_f4f70727dc34561dfde1a3c529b6205c'] = 'Réglages';
-$_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_cffa70587159989d91e6ce586ea65c14'] = 'Merci de saisir une adresse valide';
-$_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_d5fe58708a942a15c1f92d58d95d1f9e'] = 'Cette adresse email recevra la liste des commandes de la journée';
-$_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_ce8ae9da5b7cd6c3df2929543a9af92d'] = 'Email';
+$_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_5715ded410a596db54c5e27256c2bb42'] = 'Emails autorisés';
+$_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_2667cd82c68e37306e645933c222434d'] = 'Merci de sélectionner des emails';
+$_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_56a363f2c2f0458f2f575e08de1b8335'] = 'Ces emails sont les emails des employés enregistrés sur votre boutique';
 $_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_f77806aa8a961605fc80a143a685588c'] = 'N\'envoyer que les commandes validées';
 $_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_ba003c65d0e44cf9a69181f9afdc1712'] = 'Désirez-vous n\'envoyer que les commandes validées ?';
 $_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_c0a37d5ebdc9b849880f5a050160a6f0'] = 'Sinon toutes les commandes passées dans la journée seront envoyées';
@@ -21,7 +21,7 @@ $_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_eca66ebf51fd0716042
 $_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_ae55f688784a0ad91566a29848293da6'] = 'Les commandes seront envoyées sur un email à l\'heure précisée ici';
 $_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_c9cc8cce247e49bae79f15173ce97354'] = 'Enregistrer';
 $_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_2d712894ec5edaa673515e8eb72c227c'] = 'Erreur : [Etat de commande validé] n\'est pas valide';
-$_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_223ce0f617608f506707774fb0838c72'] = 'Erreur : [Email] n\'est pas valide';
+$_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_3f30fecf2714787c82d43a7fe550f3c1'] = 'Erreur : les emails ne sont pas valides';
 $_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_f95bba1524e0318d523ee5d40b01202c'] = 'Erreur : [Uniquement les commandes valides] n\'est pas valide';
 $_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_3062052676396aa1f6d8cde9038be044'] = 'Erreur : [Heure de l\'envoi] n\'est pas valide';
 $_MODULE['<{everpsdailysummary}prestashop>everpsdailysummary_5d4710f9a8250b13164a82c94d5b00d1'] = 'Référence de commande';
@@ -51,3 +51,5 @@ $_MODULE['<{everpsdailysummary}prestashop>header_c4d2324eea35c7e7b51b75f861e319d
 $_MODULE['<{everpsdailysummary}prestashop>header_923577b3c4bd51ca4c20083fd149c692'] = 'Nous avons créé sans doute le meilleur module SEO Prestashop, en travaillant avec de grosses boutiques Prestashop et en partenariat avec de grosses sociétés de référencement naturel';
 $_MODULE['<{everpsdailysummary}prestashop>header_4155fbd49af1be337176d442a5ebdeb0'] = 'Voir le meilleur module SEO sur Prestashop Addons';
 $_MODULE['<{everpsdailysummary}prestashop>header_4fb704f05a00111d953eb10dddc881d9'] = 'Ce module est gratuit et le sera toujours. Si vous désirez soutenir Team Ever afin de développer et maintenir nos modules gratuits, n\'hésitez pas à nous faire un don !';
+$_MODULE['<{everpsdailysummary}prestashop>upgrade_11f4d2cc4546c08ed99645473ba29a5f'] = 'Une mise à jour du module est disponible. Merci de contrôler';
+$_MODULE['<{everpsdailysummary}prestashop>upgrade_a43640b6c7cabe3d8d157aba85f7cee4'] = 'afin de récupérer la dernière version';
