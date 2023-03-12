@@ -30,19 +30,22 @@ class Everpsdailysummary extends Module
     {
         $this->name = 'everpsdailysummary';
         $this->tab = 'administration';
-        $this->version = '3.0.2';
+        $this->version = '3.1.1';
         $this->author = 'Team Ever';
         $this->need_instance = 0;
         $this->bootstrap = true;
         parent::__construct();
         $this->displayName = $this->l('Ever PS Daily Summary');
         $this->description = $this->l('Send the list of commands to administrators on cron');
-        $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
+        $this->ps_versions_compliancy = array(
+            'min' => '1.6',
+            'max' => _PS_VERSION_,
+        );
         $cron_url = _PS_BASE_URL_._MODULE_DIR_.'everpsdailysummary/everpsdailysummarycron.php?token=';
         $cron_token = Tools::substr(Tools::encrypt('everpsdailysummary/cron'), 0, 10);
-        $id_shop = (int)$this->context->shop->id;
+        $id_shop = (int) $this->context->shop->id;
         $this->context->smarty->assign(array(
-            'everpsdailysummary_cron' => $cron_url.$cron_token.'&id_shop='.(int)$id_shop,
+            'everpsdailysummary_cron' => $cron_url . $cron_token . '&id_shop=' . (int) $id_shop,
         ));
     }
 
@@ -59,7 +62,6 @@ class Everpsdailysummary extends Module
             )
         );
         return parent::install() &&
-            $this->registerHook('actionFrontControllerAfterInit') &&
             $this->registerHook('displayBackOfficeHeader');
     }
 
@@ -102,12 +104,18 @@ class Everpsdailysummary extends Module
             'everpsdailysummary_dir' => $this->_path,
         ));
 
-        $this->html .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/header.tpl');
+        $this->html .= $this->context->smarty->fetch(
+            $this->local_path . 'views/templates/admin/header.tpl'
+        );
         if ($this->checkLatestEverModuleVersion($this->name, $this->version)) {
-            $this->html .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/upgrade.tpl');
+            $this->html .= $this->context->smarty->fetch(
+                $this->local_path . 'views/templates/admin/upgrade.tpl'
+            );
         }
         $this->html .= $this->renderForm();
-        $this->html .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/footer.tpl');
+        $this->html .= $this->context->smarty->fetch(
+            $this->local_path . 'views/templates/admin/footer.tpl'
+        );
 
         return $this->html;
     }
@@ -182,13 +190,13 @@ class Everpsdailysummary extends Module
                             array(
                                 'id' => 'active_on',
                                 'value' => 1,
-                                'label' => $this->l('Enabled')
+                                'label' => $this->l('Enabled'),
                             ),
                             array(
                                 'id' => 'active_off',
                                 'value' => 0,
-                                'label' => $this->l('Disabled')
-                            )
+                                'label' => $this->l('Disabled'),
+                            ),
                         ),
                     ),
                     array(
@@ -201,19 +209,6 @@ class Everpsdailysummary extends Module
                         'options' => array(
                             'query' => $orderStates,
                             'id' => 'id_order_state',
-                            'name' => 'name'
-                        )
-                    ),
-                    array(
-                        'type' => 'select',
-                        'label' => $this->l('Please set time for sending orders'),
-                        'name' => 'EVERPSDAILYSUMMARY_TIME',
-                        'desc' => $this->l('Specify the time when you want to receive orders by email'),
-                        'hint' => $this->l('Orders will be sent by email ever day day at this selected time'),
-                        'required' => true,
-                        'options' => array(
-                            'query' => $this->getTime(),
-                            'id' => 'id_time',
                             'name' => 'name'
                         )
                     ),
@@ -248,9 +243,6 @@ class Everpsdailysummary extends Module
             'EVERPSDAILYSUMMARY_VALIDATED_ONLY' => Configuration::get(
                 'EVERPSDAILYSUMMARY_VALIDATED_ONLY'
             ),
-            'EVERPSDAILYSUMMARY_TIME' => Configuration::get(
-                'EVERPSDAILYSUMMARY_TIME'
-            ),
             'EVERPSDAILYSUMMARY_MAILS[]' => Tools::getValue(
                 'EVERPSDAILYSUMMARY_MAILS',
                 json_decode(
@@ -269,20 +261,15 @@ class Everpsdailysummary extends Module
         ) {
             $this->postErrors[] = $this->l('Error : [Validate order state] is not valid');
         }
-            if (!Tools::getIsset('EVERPSDAILYSUMMARY_MAILS')
-                || !Validate::isArrayWithIds(Tools::getValue('EVERPSDAILYSUMMARY_MAILS'))
-            ) {
-                $this->postErrors[] = $this->l('Error: emails is not valid');
-            }
+        if (!Tools::getValue('EVERPSDAILYSUMMARY_MAILS')
+            || !Validate::isArrayWithIds(Tools::getValue('EVERPSDAILYSUMMARY_MAILS'))
+        ) {
+            $this->postErrors[] = $this->l('Error: emails is not valid');
+        }
         if (Tools::getValue('EVERPSDAILYSUMMARY_VALIDATED_ONLY')
             && !Validate::isBool(Tools::getValue('EVERPSDAILYSUMMARY_VALIDATED_ONLY'))
         ) {
             $this->postErrors[] = $this->l('Error : [Only validated] is not valid');
-        }
-        if (!Tools::getValue('EVERPSDAILYSUMMARY_TIME')
-            || !Validate::isUnsignedInt(Tools::getValue('EVERPSDAILYSUMMARY_TIME'))
-        ) {
-            $this->postErrors[] = $this->l('Error : [Daily time] is not valid');
         }
     }
 
@@ -316,64 +303,49 @@ class Everpsdailysummary extends Module
         }
     }
 
-    public function hookActionFrontControllerAfterInit()
+    private function getDailyOrders($idShop)
     {
-        $hour = date('H');
-        $date = date('d');
-        if ((int)$hour != (int)Configuration::get('EVERPSDAILYSUMMARY_TIME')) {
-            return;
-        }
-        if ($date == (int)Configuration::get('EVERPSDAILYSUMMARY_SENT')) {
-            return;
-        }
-        return $this->sendDailyOrders(
-            (int)Context::getContext()->shop->id
-        );
-    }
-
-    private function getDailyOrders($id_shop)
-    {
-        $only_validated = (bool)Configuration::get(
+        $onlyValidated = (bool)Configuration::get(
             'EVERPSDAILYSUMMARY_VALIDATED_ONLY'
         );
-        $validated_state = (int)Configuration::get(
+        $validated_state = (int) Configuration::get(
             'EVERPSDAILYSUMMARY_VALIDATED_STATE_ID'
         );
         // Get orders
-        if ((bool)$only_validated === true) {
+        if ((bool)$onlyValidated === true) {
             $query = 'SELECT id_order
-            FROM '._DB_PREFIX_.'orders
+            FROM ' . _DB_PREFIX_ . 'orders
             WHERE date_add >= CURDATE()
             AND date_add < CURDATE() + INTERVAL 1 DAY
-            AND current_state = '.(int)$validated_state.'
-            AND id_shop = '.(int)$id_shop.'';
+            AND current_state = ' . (int) $validated_state.'
+            AND id_shop = ' . (int) $idShop.'';
         } else {
             $query = 'SELECT id_order
-            FROM '._DB_PREFIX_.'orders
+            FROM ' . _DB_PREFIX_ . 'orders
             WHERE date_add >= CURDATE()
             AND date_add < CURDATE() + INTERVAL 1 DAY
-            AND id_shop = '.(int)$id_shop.'';
+            AND id_shop = ' . (int) $idShop.'';
         }
         $orders = Db::getInstance()->executeS($query);
         // Create array of obj containing all required orders infos
         $daily_orders = [];
         foreach ($orders as $value) {
-            $daily = new stdClass;
+            $daily = new stdClass();
             $order = new Order(
-                (int)$value['id_order']
+                (int) $value['id_order']
             );
             $customer = new Customer(
-                (int)$order->id_customer
+                (int) $order->id_customer
             );
             $address = new Address(
-                (int)$order->id_address_delivery
+                (int) $order->id_address_delivery
             );
             $id_carrier = $order->getIdOrderCarrier();
             $order_carrier = new OrderCarrier(
-                (int)$id_carrier
+                (int) $id_carrier
             );
             $carrier = new Carrier(
-                (int)$order_carrier->id_carrier
+                (int) $order_carrier->id_carrier
             );
             // Add ordered products
             $daily->carrier_name = $carrier->name;
@@ -403,9 +375,9 @@ class Everpsdailysummary extends Module
         return $daily_orders;
     }
 
-    public function sendDailyOrders($id_shop)
+    public function sendDailyOrders($idShop)
     {
-        $orders = $this->getDailyOrders($id_shop);
+        $orders = $this->getDailyOrders($idShop);
         if (empty($orders)) {
             return false;
         }
@@ -414,48 +386,48 @@ class Everpsdailysummary extends Module
         $tableStyle = 'style="border-collapse: collapse;width:100%;"';
         $items = '';
         foreach ($orders as $order) {
-            $table = '<h4>'.$order->reference.'</h4>';
+            $table = '<h4>' . $order->reference . '</h4>';
             // First global datas, as customer
-            $table .= '<table '.$tableStyle.'>';
+            $table .= '<table ' . $tableStyle . '>';
             // Global datas header
             $table .= '<tr style="background-color:#e3e3e3">';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $this->l('Order reference');
             $table .=  '</td>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $this->l('Customer');
             $table .=  '</td>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $this->l('Address');
             $table .=  '</td>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $this->l('Postcode');
             $table .=  '</td>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $this->l('City');
             $table .=  '</td>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $this->l('Phone');
             $table .=  '</td>';
             $table .=  '</tr>';
             // Global datas infos
             $table .= '<tr>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $order->reference;
             $table .= '</td>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $order->customer_firstname.' '.$order->customer_lastname;
             $table .= '</td>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $order->address1.' '.$order->address2;
             $table .= '</td>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $order->postcode;
             $table .= '</td>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $order->city;
             $table .= '</td>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $order->phone;
             $table .= '</td>';
             $table .= '</tr>';
@@ -463,29 +435,29 @@ class Everpsdailysummary extends Module
             // End global datas
             // Now products
             $table .= '<h4>'.$this->l('Ordered products').'</h4>';
-            $table .= '<table '.$tableStyle.'>';
+            $table .= '<table ' . $tableStyle . '>';
             // Products header
             $table .= '<tr style="background-color:#e3e3e3">';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $this->l('Product name');
             $table .=  '</td>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $this->l('Product reference');
             $table .=  '</td>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $this->l('Product quantity');
             $table .=  '</td>';
             $table .=  '</tr>';
             // Products infos on a loop
             foreach ($order->products as $product) {
                 $table .= '<tr>';
-                $table .=  '<td '.$tdStyle.'>';
+                $table .=  '<td ' . $tdStyle . '>';
                 $table .= $product['product_name'];
                 $table .= '</td>';
-                $table .=  '<td '.$tdStyle.'>';
+                $table .=  '<td ' . $tdStyle . '>';
                 $table .= $product['product_reference'];
                 $table .= '</td>';
-                $table .=  '<td '.$tdStyle.'>';
+                $table .=  '<td ' . $tdStyle . '>';
                 $table .= $product['product_quantity'];
                 $table .= '</td>';
                 $table .= '</tr>';
@@ -494,40 +466,40 @@ class Everpsdailysummary extends Module
             // End products
             // Now others datas
             $table .= '<h4>'.$this->l('Order informations').'</h4>';
-            $table .= '<table '.$tableStyle.'>';
+            $table .= '<table ' . $tableStyle . '>';
             // Others datas header
             $table .= '<tr style="background-color:#e3e3e3">';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $this->l('Payment method');
             $table .=  '</td>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $this->l('Order date add');
             $table .=  '</td>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $this->l('Total paid');
             $table .=  '</td>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $this->l('Shipping method');
             $table .=  '</td>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $this->l('Total shipping');
             $table .=  '</td>';
             $table .=  '</tr>';
             // Others datas infos
             $table .= '<tr>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $order->payment;
             $table .= '</td>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $order->date_add;
             $table .= '</td>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $order->total_paid;
             $table .= '</td>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $order->carrier_name;
             $table .= '</td>';
-            $table .=  '<td '.$tdStyle.'>';
+            $table .=  '<td ' . $tdStyle . '>';
             $table .= $order->total_shipping;
             $table .= '</td>';
             $table .= '</tr>';
@@ -538,15 +510,19 @@ class Everpsdailysummary extends Module
             $items .= $table;
         }
         // Then send email
-        $subject = $this->l('Daily orders');
-        $mailDir = _PS_MODULE_DIR_.'everpsdailysummary/mails/';
+        $subject = $this->l('Daily orders : ') . count($orders);
+        $mailDir = _PS_MODULE_DIR_ . 'everpsdailysummary/mails/';
 
         $employeeEmails = Configuration::get(
             'EVERPSDAILYSUMMARY_MAILS'
         );
+        if (!$employeeEmails) {
+            return;
+        }
+        $employeeEmails = json_decode($employeeEmails);
         foreach ($employeeEmails as $employeeEmail) {
             $employee = new Employee(
-                (int)$employeeEmail['id_employee']
+                (int) $employeeEmail
             );
             if (!Validate::isLoadedObject($employee)) {
                 continue;
@@ -554,17 +530,17 @@ class Everpsdailysummary extends Module
             $sent = Mail::send(
                 (int)Context::getContext()->language->id,
                 'everpsdailysummary',
-                (string)$subject,
-                array(
+                (string) $subject,
+                [
                     '{shop_name}' => Configuration::get('PS_SHOP_NAME'),
-                    '{shop_logo}' => _PS_IMG_DIR_.Configuration::get(
+                    '{shop_logo}' => _PS_IMG_DIR_ . Configuration::get(
                         'PS_LOGO',
                         null,
                         null,
-                        (int)$id_shop
+                        (int) $idShop
                     ),
                     '{message}' => $items,
-                ),
+                ],
                 (string)$employee->email,
                 (string)Configuration::get('PS_SHOP_NAME'),
                 (string)Configuration::get('PS_SHOP_EMAIL'),
@@ -573,115 +549,8 @@ class Everpsdailysummary extends Module
                 null,
                 $mailDir
             );
-            if ($sent) {
-                Configuration::updateValue('EVERPSDAILYSUMMARY_SENT', date('d'));
-            }
         }    
         return $sent;
-    }
-
-    private function getTime()
-    {
-        $time = array(
-            array(
-                'id_time' => 1,
-                'name' => '01:00'
-            ),
-            array(
-                'id_time' => 2,
-                'name' => '02:00'
-            ),
-            array(
-                'id_time' => 3,
-                'name' => '03:00'
-            ),
-            array(
-                'id_time' => 4,
-                'name' => '04:00'
-            ),
-            array(
-                'id_time' => 5,
-                'name' => '05:00'
-            ),
-            array(
-                'id_time' => 6,
-                'name' => '06:00',
-            ),
-            array(
-                'id_time' => 7,
-                'name' => '07:00',
-            ),
-            array(
-                'id_time' => 8,
-                'name' => '08:00'
-            ),
-            array(
-                'id_time' => 9,
-                'name' => '09:00'
-            ),
-            array(
-                'id_time' => 10,
-                'name' => '10:00'
-            ),
-            array(
-                'id_time' => 11,
-                'name' => '11:00'
-            ),
-            array(
-                'id_time' => 12,
-                'name' => '12:00',
-            ),
-            array(
-                'id_time' => 13,
-                'name' => '13:00'
-            ),
-            array(
-                'id_time' => 14,
-                'name' => '14:00'
-            ),
-            array(
-                'id_time' => 15,
-                'name' => '15:00'
-            ),
-            array(
-                'id_time' => 16,
-                'name' => '16:00'
-            ),
-            array(
-                'id_time' => 17,
-                'name' => '17:00'
-            ),
-            array(
-                'id_time' => 18,
-                'name' => '18:00'
-            ),
-            array(
-                'id_time' => 19,
-                'name' => '19:00'
-            ),
-            array(
-                'id_time' => 20,
-                'name' => '20:00'
-            ),
-            array(
-                'id_time' => 21,
-                'name' => '21:00'
-            ),
-            array(
-                'id_time' => 22,
-                'name' => '22:00'
-            ),
-            array(
-                'id_time' => 23,
-                'name' => '23:00'
-            ),
-            array(
-                'id_time' => 24,
-                'name' => '24:00'
-            )
-
-        );
-        return $time;
     }
 
     /**
@@ -703,12 +572,14 @@ class Everpsdailysummary extends Module
 
     public function checkLatestEverModuleVersion($module, $version)
     {
-        $upgrade_link = 'https://upgrade.team-ever.com/upgrade.php?module='
-        .$module
-        .'&version='
-        .$version;
-        $handle = curl_init($upgrade_link);
+        $upgradeLink = 'https://upgrade.team-ever.com/upgrade.php?module='
+        . $module
+        . '&version='
+        . $version;
+        $handle = curl_init($upgradeLink);
         curl_setopt($handle, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($handle, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($handle, CURLOPT_SSL_VERIFYPEER, false);
         curl_exec($handle);
         $httpCode = curl_getinfo($handle, CURLINFO_HTTP_CODE);
         if ($httpCode != 200) {
@@ -717,7 +588,7 @@ class Everpsdailysummary extends Module
         }
         curl_close($handle);
         $module_version = Tools::file_get_contents(
-            $upgrade_link
+            $upgradeLink
         );
         if ($module_version && $module_version > $version) {
             return true;

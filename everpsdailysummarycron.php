@@ -24,24 +24,24 @@ if (!Tools::getIsset('token')
     || Tools::substr(Tools::encrypt('everpsdailysummary/cron'), 0, 10) != Tools::getValue('token')
     || !Module::isInstalled('everpsdailysummary')
 ) {
-    die('Holy crap ! 🙄 That\'s an invalid token...');
+    Tools::redirect('index.php');
 }
 
 $everpsdailysummary = Module::getInstanceByName('everpsdailysummary');
 
 if (!$everpsdailysummary->active) {
-    die('Sorry, the module Ever PS Daily Summary is not active 😬');
+    Tools::redirect('index.php');
 }
 /* Check if the requested shop exists */
-$shops = Db::getInstance()->ExecuteS('SELECT id_shop FROM `'._DB_PREFIX_.'shop`');
+$shops = Db::getInstance()->ExecuteS('SELECT id_shop FROM `' . _DB_PREFIX_ . 'shop`');
 
-$list_id_shop = array();
+$listIdShop = array();
 foreach ($shops as $shop) {
-    $list_id_shop[] = (int)$shop['id_shop'];
+    $listIdShop[] = (int) $shop['id_shop'];
 }
 
-$id_shop = (Tools::getIsset('id_shop') && in_array(Tools::getValue('id_shop'), $list_id_shop))
-    ? (int)Tools::getValue('id_shop') : (int)Configuration::get('PS_SHOP_DEFAULT');
+$id_shop = (Tools::getIsset('id_shop') && in_array(Tools::getValue('id_shop'), $listIdShop))
+    ? (int) Tools::getValue('id_shop') : (int) Configuration::get('PS_SHOP_DEFAULT');
 $everpsdailysummary->cron = true;
 
 $everpsdailysummary->sendDailyOrders((int)$id_shop);
